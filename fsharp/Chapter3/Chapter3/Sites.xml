@@ -1,0 +1,61 @@
+<sites>
+	<site name="El Universal" type="rss">
+		<channels>
+			<channel name="Minuto x Minuto" url="http://www.eluniversal.com.mx/rss/universalmxm.xml"/>
+			<channel name="El mundo" url="http://www.eluniversal.com.mx/rss/mundo.xml" />
+			<channel name="Nación" url="http://www.eluniversal.com.mx/rss/mexico.xml" />
+			<channel name="Estados" url="http://www.eluniversal.com.mx/rss/estados.xml" />
+			<channel name="Metrópoli" url="http://www.eluniversal.com.mx/rss/df.xml" />
+			<channel name="Pymes" url="http://www.eluniversal.com.mx/rss/pymes.xml" />
+			<channel name="Cartera" url="http://www.eluniversal.com.mx/rss/finanzas.xml" />
+			<channel name="Espectáculos" url="http://www.eluniversal.com.mx/rss/espectaculos.xml" />
+			<channel name="Cultura" url="http://www.eluniversal.com.mx/rss/cultura.xml" />
+			<channel name="Estilos" url="http://www.eluniversal.com.mx/rss/estilos.xml" />
+			<channel name="Ciencia" url="http://www.eluniversal.com.mx/rss/ciencia.xml" />
+			<channel name="Tecnología" url="http://www.eluniversal.com.mx/rss/computo.xml" />
+			<channel name="Autopistas" url="http://www.eluniversal.com.mx/rss/autopistas.xml" />
+			<channel name="Destinos"  url="http://www.eluniversal.com.mx/rss/destinos.xml" />
+			<channel name="Alerta Vial" url="http://www.eluniversal.com.mx/rss/vialidad.xml" />
+			<channel name="Tu cartera" url="http://www.eluniversal.com.mx/rss/tudinero.xml" />
+			<channel name="El Gráfico" url="http://www.eluniversal.com.mx/rss/grafico.xml" />
+			<channel name="Sociedad"  url="http://www.eluniversal.com.mx/rss/sociedad.xml" />
+			<channel name="Estado de México" url="http://www.eluniversal.com.mx/rss/edomex.xml" />
+		</channels>
+	</site>
+	<site name="El Financiero" type="rss">
+		<channels>
+			<channel url="http://www.elfinanciero.com.mx/rss/" />
+		</channels>
+	</site>
+	<site name="La Jornada" type="rss">
+		<channels>
+			<channel name="Edición Completa" url="http://www.jornada.unam.mx/rss/edicion.xml" />
+			<channel name="Últimas noticias" url="http://www.jornada.unam.mx/ultimas/news/RSS" />			
+			<channel name="Opinión" url="http://www.jornada.unam.mx/rss/opinion.xml" />
+			<channel name="Política" url="http://www.jornada.unam.mx/rss/politica.xml" />
+			<channel name="Economía" url="http://www.jornada.unam.mx/rss/economia.xml" />
+			<channel name="Mundo" url="http://www.jornada.unam.mx/rss/mundo.xml" />
+			<channel name="Estados" url="http://www.jornada.unam.mx/rss/estados.xml" />
+			<channel name="Capital" url="http://www.jornada.unam.mx/rss/capital.xml" />
+			<channel name="Sociedad y Justicia" url="http://www.jornada.unam.mx/rss/sociedad.xml" />
+			<channel name="Ciencias" url="http://www.jornada.unam.mx/rss/ciencias.xml" />
+			<channel name="Cultura" url="http://www.jornada.unam.mx/rss/cultura.xml" />
+			<channel name="Gastronomía" url="http://www.jornada.unam.mx/rss/gastronomia.xml" />
+			<channel name="Espectáculos" url="http://www.jornada.unam.mx/rss/espectaculos.xml" />
+			<channel name="Deportes" url="http://www.jornada.unam.mx/rss/deportes.xml" />
+			<channel name="Cartones" url="http://www.jornada.unam.mx/rss/cartones.xml" />
+		</channels>
+	</site>
+	<site name="CNN Mexico" type="rss">
+		<channels>
+			<channel name="Portada" url="http://feeds2.feedburner.com/cnnmexico/portada" />
+			<channel name="Nacional" url="http://feeds2.feedburner.com/cnnmexico/nacional" />
+			<channel name="Mundo" url="http://feeds2.feedburner.com/cnnmexico/mundo" />
+			<channel name="Vida y salud" url="http://feeds2.feedburner.com/cnnmexico/salud" />
+			<channel name="Entretenimiento" url="http://feeds2.feedburner.com/cnnmexico/entretenimiento" />
+			<channel name="Deportes" url="http://feeds2.feedburner.com/cnnmexico/deportes" />
+			<channel name="Economía" url="http://feeds2.feedburner.com/cnnexpansion/economia" />
+			<channel name="Tecnología" url="http://feeds.feedburner.com/cnnmexico/tecnologia" />
+		</channels>
+	</site>	
+</sites>
