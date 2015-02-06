@@ -293,7 +293,8 @@ module SiteIndexer =
             printfn "Reading site %s" site
             let channels = e.Descendants(!!"channel") 
             let channels = match channels.Count() with 
-                            | count when putLimitTo.IsSome && count > putLimitTo.Value -> channels |> Seq.take putLimitTo.Value
+                            | count when putLimitTo.IsSome && count > putLimitTo.Value -> 
+                                channels |> Seq.take putLimitTo.Value
                             | _ -> channels
             async {            
                 return Async.Parallel [for c in channels -> readChannel site c] |> 
