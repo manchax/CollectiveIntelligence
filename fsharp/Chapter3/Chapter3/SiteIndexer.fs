@@ -1,4 +1,4 @@
-﻿namespace Chapter3
+namespace Chapter3
 module SiteIndexer =
     open System
     open System.Data
@@ -312,57 +312,3 @@ module SiteIndexer =
         db.DataContext.ExecuteCommand("DELETE FROM WordsLinks") |> ignore    
         db.DataContext.ExecuteCommand("DELETE FROM Words") |> ignore    
         db.DataContext.ExecuteCommand("DELETE FROM Links") |> ignore    
-        //index
-    
-//        let mutable links = Set.empty<string>
-//        for entry in index do 
-//            for l in entry.Value do
-//                //MSDN: No exception is raised if the set already contains the given element.
-//                links <- links.Add(l.Link)    
-//        links |> Seq.map (fun l ->         
-//            new dbSchema.ServiceTypes.Links(Link = l) ) |> 
-//        db.Links.InsertAllOnSubmit
-    
-//        index |> Seq.map (fun kv ->                    
-//            new dbSchema.ServiceTypes.Words(Word = kv.Key)) |>
-//        db.Words.InsertAllOnSubmit
-    
-//        try
-//            db.DataContext.SubmitChanges()        
-//        with
-//           | exn -> printfn "Exception:\n%s" exn.Message
-        
-//        let iterations = match index.Count % 5000 with 
-//            | modulus when modulus > 0 -> (index.Count / 5000) + 1
-//            | _ -> index.Count / 5000
-//        
-//        for i in 0..iterations-1 do
-//            let takeAmt = match i with
-//                | i when i = (iterations-1) -> index.Count % 5000
-//                | _ -> 5000             
-//            
-//            query { for e in index do
-//                    select e
-//                    skip (i*5000)
-//                    take takeAmt 
-//            } |> Seq.iter ( fun e ->             
-//                let wordID = findWordID e.Key
-//                for l in e.Value do
-//                    let wl = 
-//                        new dbSchema.ServiceTypes.WordsLinks(
-//                            LinkID = (findLinkID l.Link), 
-//                            WordID = wordID, 
-//                            Count = l.Positions.Length)                      
-//                    l.Positions |> List.map (fun p -> 
-//                        new dbSchema.ServiceTypes.WordsLinksPositions(
-//                            Position = p,
-//                            WordsLinks = wl) ) |> wl.WordsLinksPositions.AddRange
-//                                                   
-//                    db.WordsLinks.InsertOnSubmit(wl)
-//                    db.WordsLinksPositions.InsertAllOnSubmit(wl.WordsLinksPositions)
-//            )
-//
-//            try
-//                db.DataContext.SubmitChanges()        
-//            with
-//                | exn -> printfn "Exception:\n%s" exn.Message
