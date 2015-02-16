@@ -12,45 +12,20 @@ module SiteIndexer =
     open System.Net
     open Microsoft.FSharp.Control.CommonExtensions
     open HtmlAgilityPack
-    open Microsoft.FSharp.Data.TypeProviders
+    //open Microsoft.FSharp.Data.TypeProviders
     open Microsoft.FSharp.Linq
     open Microsoft.FSharp.Control.WebExtensions
+    open Microsoft.FSharp.Collections
     open System.Collections.Concurrent
+    open Chapter3
+    open GraphModel
+
     type WordMatches = { Link: string; Positions: List<int> }
-    type dbSchema = SqlDataConnection<"Data Source=MANCHAX-LAP;Initial Catalog=NewsIndex;Integrated Security=True; Pooling=False">
+    //type dbSchema = SqlDataConnection<"Data Source=MANCHAX-LAP;Initial Catalog=NewsIndex;Integrated Security=True; Pooling=False">
     let private putLimitTo = None
     //let private db = dbSchema.GetDataContext()
     let mutable private linkCache = new ConcurrentDictionary<string, int>()
-    let mutable private wordCache = new ConcurrentDictionary<string, int>()
-    
-    let private findLinkID link =        
-        if linkCache.ContainsKey(link) then
-            Some(linkCache.[link])
-        else
-            sprintf "%s Looking into DB for %s" (DateTime.Now.ToShortTimeString()) link |> Debug.WriteLine
-            use db = dbSchema.GetDataContext()
-            let existing = db.DataContext.ExecuteQuery<int>("SELECT ID FROM Links WHERE Link = {0}", link) |> Seq.toArray
-            match existing.Length with 
-            | c when c > 0 -> 
-                let id = existing.[0]
-                let id = linkCache.AddOrUpdate(link, id, (fun _ oldValue -> oldValue) )
-                Some(id)
-            | _ -> None
-
-    let private findWordID word = 
-        use db = dbSchema.GetDataContext()
-        if wordCache.ContainsKey(word) then
-            Some(wordCache.[word])
-        else
-            let q = (query { for w in db.Words do
-                            where ( w.Word = word )
-                            select w.ID
-                            take 1 }).FirstOrDefault()
-            match q with 
-            | id when id > 0 ->                 
-                let id = wordCache.AddOrUpdate(word, id, (fun _ oldValue -> oldValue) ) 
-                Some(id)
-            | _ -> None
+    let mutable private wordCache = new ConcurrentDictionary<string, int>()   
     
     let private ignoredWords = ["cómo"; "como"; "está"; "tica"; "ante"; "sobre"; "entre"; "qué"; "sin"; "ya"; "han"; "hemos"; "ha"; "tu"; "hace"; "tras"; "más"; "lo"; "y"; "si"; "no"; "de"; "del"; "para"; "pero"; "como"; "por"; "que"; "al"; "es"; "son"; "fue"; "ha"; "quien"; "en"; "la"; "el"; "los"; "las"; "un"; "uno"; "una"; "unos"; "su"; "sus"; "se"; "ser"; "si"; "este"; "esta"; "eso"; "esa"; "con"; 
     "from"; "to"; "and"; "of"; "the"; "a"; "in"; "at"; "as"; "on"; "an"; "not"; "for"; "or"; "has"; "have"; "had"; "i"; "you"; "he"; "she"; "it"; "we"; "they"; "with"; "by"; 
@@ -81,12 +56,14 @@ module SiteIndexer =
         let wordL = word.ToLower().Trim()
         let wordT = word.Trim()
         let mutable words = allWords
-        if not(ignoredWords.Contains(wordL)) then 
-            let positions = match words.ContainsKey(wordT) with
+        let positions = 
+            match words.ContainsKey(wordT) with
                 | true -> position :: words.[wordT]
                 | false -> [position]
-            words <- words.Add(wordT, positions)                 
-        words
+        words.Add(wordT, positions)
+
+    let private isValid (word:string) =
+        not(ignoredWords.Contains(word.ToLower()))
 
     let private parseWords text : Map<string,List<int>> = 
         let mutable wordIndex = Map.empty    
@@ -97,18 +74,17 @@ module SiteIndexer =
             let words = m.Value.Split(' ')
             let lastIndex = words.Length-1
             for i in 0..lastIndex do 
-                let word = match i with 
-                    | _ when (i = 0 || i = lastIndex) && not(ignoredWords.Contains(words.[i].ToLower())) -> 
-                        words.[i] + " "
-                    | _ -> " " 
-                capital_words.Append(word.Trim()) |> ignore
+                if (isValid words.[i]) then
+                    if ( capital_words.Length > 0 ) then
+                        capital_words.Append(@" ") |> ignore
+                    capital_words.Append(words.[i]) |> ignore
             if capital_words.Length > 0 then
                 wordIndex <- addPosition wordIndex (capital_words.ToString()) m.Index
             Debug.WriteLine(Profiling.wordProcessed())
         //continue indexing all other words
         for m in Regex.Matches(text, @"\b([a-z0-9][\w']{2,})\b") do
-            Profiling.beginSnapshot()
-            if not(ignoredWords.Contains(m.Value.ToLower())) then
+            Profiling.beginSnapshot()             
+            if (isValid m.Value) then
                 wordIndex <- addPosition wordIndex m.Value m.Index
             Debug.WriteLine(Profiling.wordProcessed())
         wordIndex
@@ -128,9 +104,10 @@ module SiteIndexer =
     let private mergeToIndex (index:Map<string, List<WordMatches>>) (words:Map<string,List<int>>, link) =
         let mutable finalIndex = index
         for w in words do  
-            let matches = match finalIndex.ContainsKey(w.Key) with 
-                | true -> finalIndex.[w.Key]
-                | false -> []
+            let matches = 
+                match finalIndex.ContainsKey(w.Key) with 
+                    | true -> finalIndex.[w.Key]
+                    | false -> []
             let matches = addLink matches link w.Value
             finalIndex <- finalIndex.Add(w.Key, matches)
         finalIndex
@@ -148,92 +125,55 @@ module SiteIndexer =
             let dirName = Path.Combine("data", site, channel)
             if not(Directory.Exists(dirName)) then
                 Directory.CreateDirectory(dirName) |> ignore
-            let fileName = match Path.GetFileNameWithoutExtension(uri.LocalPath) + ".txt" with
-                | name when File.Exists(Path.Combine(dirName, name)) -> name + "_" + Guid.NewGuid().ToString() + ".txt"
-                | name -> name
+            let fileName = 
+                match Path.GetFileNameWithoutExtension(uri.LocalPath) + ".txt" with
+                    | name when File.Exists(Path.Combine(dirName, name)) -> name + "_" + Guid.NewGuid().ToString() + ".txt"
+                    | name -> name
             let fileName = Path.Combine(dirName, fileName)
             let buffer = UTF8Encoding.UTF8.GetBytes(bodyText)
             use file = File.Create(fileName)
             do! file.AsyncWrite(buffer)
         } |> Async.Start
-        bodyText |> parseWords 
-
-    let private saveLink url = 
-        use db = dbSchema.GetDataContext()
-        let id = findLinkID url
-        match id with 
-        | None -> 
-            new dbSchema.ServiceTypes.Links(Link = url) |> db.Links.InsertOnSubmit
-            try 
-                db.DataContext.SubmitChanges()
-                let id = db.DataContext.ExecuteQuery<int>("SELECT MAX(ID) FROM Links").First()
-                linkCache.AddOrUpdate(url, id, (fun _ oldValue -> oldValue) )
-            with ex -> 
-                printfn "Error al guardar link. Message: %s" ex.Message; 0
-        | Some(value) -> value
+        bodyText |> parseWords       
 
     let private parseHtml (site, channel) (url:string) =    
         let webClient = new WebClient() 
         webClient.Headers.["user-agent"] <- "Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko"
-        let uri = new Uri(url)    
-        let linkID = saveLink url
+        let uri = new Uri(url)
         async {
             try 
                 let doc = new HtmlDocument()
                 let! data = webClient.AsyncDownloadString(uri)                
-                let enc = match doc.DetectEncodingHtml(data) with
-                    | null -> webClient.Encoding
-                    | e when e <> doc.DeclaredEncoding -> doc.DeclaredEncoding
-                    | e -> e                
+                let enc = 
+                    match doc.DetectEncodingHtml(data) with
+                        | null -> webClient.Encoding
+                        | e when e <> doc.DeclaredEncoding -> doc.DeclaredEncoding
+                        | e -> e
+                // TODO: Check Encoding when retrieving other than HTML
                 webClient.Encoding.GetBytes(data) |> enc.GetString |> doc.LoadHtml
-                let words = match doc.DocumentNode.SelectSingleNode("//body") with  
-                    | null -> Map.empty<string, List<int>>
-                    | b -> parseBody b (site, channel, uri)                                              
-                return (words, linkID)
+                // ---------------------- HTML DOCUMENT LOADED
+                // Create link in DB
+                let link = GraphDB.saveLink (url, Seq.empty)
+                let words = 
+                    match doc.DocumentNode.SelectSingleNode("//body") with  
+                        | null -> Map.empty<string, List<int>>
+                        | b -> parseBody b (site, channel, uri)                                              
+                return (words, link)
             with | ex -> 
                 printfn "Error reading HTML from %s. Error: %s." (uri.ToString()) ex.Message
-                return (Map.empty<string, List<int>>, linkID)
+                return (Map.empty<string, List<int>>, null)
         }
 
     let private createWordIndex (site, channel) (i:XElement) =   
-        let link = i.Element(!!"link").Value        
         async {            
-            let! (pageWords, linkID) = parseHtml (site, channel) link 
-            use db = dbSchema.GetDataContext()
+            let! (pageWords, linkNode) = parseHtml (site, channel) (i.Element(!!"link").Value) 
+            //use db = dbSchema.GetDataContext()
             for kv in pageWords do 
-                let word = kv.Key                        
-                let wordID = match (findWordID word) with
-                    | Some(value) -> value 
-                    | None ->                         
-                        new dbSchema.ServiceTypes.Words(Word = word) |> db.Words.InsertOnSubmit
-                        try 
-                            db.DataContext.SubmitChanges()
-                            match findWordID word with
-                                | Some(id) -> id
-                                | None -> failwith "Error al guardar Palabra"
-                        with ex -> 
-                            printfn "Error al guardar Palabra %s. Message: %s" word ex.Message; 0  
+                let word = kv.Key    
+                let positions = kv.Value |> List.map ( fun iPos -> new WordPosition(iPos) )
+                GraphDB.saveWord kv.Key positions linkNode |> ignore
 
-                let parent = 
-                    new dbSchema.ServiceTypes.WordsLinks(   LinkID = linkID, 
-                                                            WordID = wordID, 
-                                                            Count = kv.Value.Length )                                 
-                for p in kv.Value do
-                    parent.WordsLinksPositions.Add(
-                        new dbSchema.ServiceTypes.WordsLinksPositions(
-                            Position = p                            
-                        )
-                    )
-
-                parent |> db.WordsLinks.InsertOnSubmit                                                                                   
-                //arent.WordsLinksPositions |> db.WordsLinksPositions.InsertAllOnSubmit
-
-                try 
-                    db.DataContext.SubmitChanges()                    
-                with ex -> 
-                    printfn "Error al guardar alguna o varias Posiciones de Palabra %s en Sitio %s. Message: %s" kv.Key link ex.Message; 0  
-
-            return (pageWords, link)
+            return (pageWords, linkNode.URL)
 
         }
 
@@ -241,11 +181,12 @@ module SiteIndexer =
         let url = e.Attribute(!!"url").Value 
         let name = match e.Attribute(!!"name") with
                     | null -> "default"
-                    | value -> value.Value          
+                    | value -> value.Value   
+        
         async {  
             //use reference cell instead of mutable because its within async block
             //NOTE: Use operator ! to get ref's value
-            let wordIndex = ref(Map.empty<string, List<WordMatches>>)            
+            let wordIndex = ref(Map.empty)            
             let doc = 
                 try Some(XDocument.Load(url))
                 with | ex -> printfn "Exception loading URL: %s. Message: %s" url ex.Message; None   
@@ -304,65 +245,4 @@ module SiteIndexer =
         ) |> 
         Async.Parallel |> 
         Async.RunSynchronously |> 
-        mergeIndexes    
-
-    let saveIndex (index:Map<string, List<WordMatches>>) = 
-        use db = dbSchema.GetDataContext()
-        db.DataContext.ExecuteCommand("DELETE FROM WordsLinksPositions") |> ignore  
-        db.DataContext.ExecuteCommand("DELETE FROM WordsLinks") |> ignore    
-        db.DataContext.ExecuteCommand("DELETE FROM Words") |> ignore    
-        db.DataContext.ExecuteCommand("DELETE FROM Links") |> ignore    
-        //index
-    
-//        let mutable links = Set.empty<string>
-//        for entry in index do 
-//            for l in entry.Value do
-//                //MSDN: No exception is raised if the set already contains the given element.
-//                links <- links.Add(l.Link)    
-//        links |> Seq.map (fun l ->         
-//            new dbSchema.ServiceTypes.Links(Link = l) ) |> 
-//        db.Links.InsertAllOnSubmit
-    
-//        index |> Seq.map (fun kv ->                    
-//            new dbSchema.ServiceTypes.Words(Word = kv.Key)) |>
-//        db.Words.InsertAllOnSubmit
-    
-//        try
-//            db.DataContext.SubmitChanges()        
-//        with
-//           | exn -> printfn "Exception:\n%s" exn.Message
-        
-//        let iterations = match index.Count % 5000 with 
-//            | modulus when modulus > 0 -> (index.Count / 5000) + 1
-//            | _ -> index.Count / 5000
-//        
-//        for i in 0..iterations-1 do
-//            let takeAmt = match i with
-//                | i when i = (iterations-1) -> index.Count % 5000
-//                | _ -> 5000             
-//            
-//            query { for e in index do
-//                    select e
-//                    skip (i*5000)
-//                    take takeAmt 
-//            } |> Seq.iter ( fun e ->             
-//                let wordID = findWordID e.Key
-//                for l in e.Value do
-//                    let wl = 
-//                        new dbSchema.ServiceTypes.WordsLinks(
-//                            LinkID = (findLinkID l.Link), 
-//                            WordID = wordID, 
-//                            Count = l.Positions.Length)                      
-//                    l.Positions |> List.map (fun p -> 
-//                        new dbSchema.ServiceTypes.WordsLinksPositions(
-//                            Position = p,
-//                            WordsLinks = wl) ) |> wl.WordsLinksPositions.AddRange
-//                                                   
-//                    db.WordsLinks.InsertOnSubmit(wl)
-//                    db.WordsLinksPositions.InsertAllOnSubmit(wl.WordsLinksPositions)
-//            )
-//
-//            try
-//                db.DataContext.SubmitChanges()        
-//            with
-//                | exn -> printfn "Exception:\n%s" exn.Message
+        mergeIndexes

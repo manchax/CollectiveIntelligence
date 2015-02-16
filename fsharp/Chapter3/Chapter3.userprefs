@@ -1,0 +1,27 @@
+﻿<Properties StartupItem="Chapter3/Chapter3.fsproj">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Chapter3/GraphDB.fs">
+    <Files>
+      <File FileName="Chapter3/SiteIndexer.fs" Line="51" Column="51" />
+      <File FileName="Chapter3/GraphDB.fs" Line="32" Column="32" />
+      <File FileName="Chapter3/SQLEntityConnection.fs" Line="7" Column="7" />
+      <File FileName="GraphModel/WordInURL.cs" Line="19" Column="19" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State expanded="True">
+          <Node name="Chapter3" expanded="True" selected="True">
+            <Node name="References" expanded="True" />
+          </Node>
+          <Node name="GraphModel" expanded="True" />
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore>
+      <Breakpoint file="/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/GraphDB.fs" line="12" column="1" />
+    </BreakpointStore>
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>

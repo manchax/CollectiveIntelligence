@@ -1,0 +1,15 @@
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/obj/Debug/.NETFramework,Version=v4.5.AssemblyAttribute.fs
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/Sites.xml
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/Chapter3.exe.config
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/Chapter3.exe.mdb
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/Chapter3.exe
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/obj/Debug/Chapter3.exe
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/obj/Debug/Chapter3.exe.mdb
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/HtmlAgilityPack.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/FSharp.Core.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/System.Net.Http.Primitives.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/System.Net.Http.Extensions.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/Newtonsoft.Json.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/Neo4jClient.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/GraphModel.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/Chapter3/bin/Debug/GraphModel.dll.mdb

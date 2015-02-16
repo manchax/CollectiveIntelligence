@@ -3,7 +3,6 @@
 open System
 open System.Diagnostics
 open SiteIndexer
-
 module Main =
     let totalCount (wordEntries:List<WordMatches>) =
         query { for w in wordEntries do 

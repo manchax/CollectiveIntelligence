@@ -12,12 +12,12 @@ module SQLEntityConnection
 #endif
 
 open System.Data
-open System.Data.Entity
-open Microsoft.FSharp.Data.TypeProviders
+//open System.Data.Entity
+//open Microsoft.FSharp.Data.TypeProviders
 
 // You can use Server Explorer to build your ConnectionString.
-type internal SqlConnection = Microsoft.FSharp.Data.TypeProviders.SqlEntityConnection<ConnectionString = @"Data Source=MANCHAX-LAP;Initial Catalog=NewsIndex;Integrated Security=True">
-let internal db = SqlConnection.GetDataContext()
+//type internal SqlConnection = Microsoft.FSharp.Data.TypeProviders.SqlEntityConnection<ConnectionString = @"Data Source=MANCHAX-LAP;Initial Catalog=NewsIndex;Integrated Security=True">
+//let internal db = SqlConnection.GetDataContext()
 
 
 //let internal table = query {
