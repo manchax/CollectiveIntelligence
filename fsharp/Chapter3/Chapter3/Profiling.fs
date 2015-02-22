@@ -7,9 +7,10 @@ module Profiling =
         | WordProcessed 
         | WordProcessedAvgTime         
 
-    let getIndex c = match c with
-        | WordProcessed -> 0
-        | WordProcessedAvgTime -> 1
+    let getIndex c = 
+        match c with
+            | WordProcessed -> 0
+            | WordProcessedAvgTime -> 1
         
     let private create() =         
         PerformanceCounterCategory.Create(
@@ -24,14 +25,14 @@ module Profiling =
 
     let private watch = new Stopwatch()
     let mutable private data = Array.empty
-    let init() = 
+    let init () = 
         data <- match PerformanceCounterCategory.Exists(PERF_COUNTER_CATEGORY) with 
-            | false -> create()
-            | true -> (new PerformanceCounterCategory(PERF_COUNTER_CATEGORY)).GetCounters() 
+                | false -> create()
+                | true -> (new PerformanceCounterCategory(PERF_COUNTER_CATEGORY)).GetCounters() 
         data |> Array.iter ( fun c -> 
             c.ReadOnly <- false 
             c.InstanceName <- "PID: " + System.AppDomain.CurrentDomain.FriendlyName
-        )        
+        )
 
     let beginSnapshot() = watch.Restart()
     let endSnapshot() = 

@@ -7,3 +7,9 @@
 /home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/GraphModel/bin/Debug/System.Net.Http.Extensions.dll
 /home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/GraphModel/bin/Debug/Newtonsoft.Json.dll
 /home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/GraphModel/bin/Debug/Neo4jClient.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/GraphModel/obj/Debug/.NETFramework,Version=v4.0.AssemblyAttribute.cs
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/GraphModel/bin/Debug/System.IO.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/GraphModel/bin/Debug/System.Runtime.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/GraphModel/bin/Debug/System.Threading.Tasks.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/GraphModel/bin/Debug/System.Net.Http.dll
+/home/local/ANT/mvillavi/git/github/CollectiveIntelligence/fsharp/Chapter3/GraphModel/bin/Debug/System.Net.Http.WebRequest.dll

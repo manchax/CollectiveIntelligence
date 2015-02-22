@@ -9,7 +9,7 @@ module GraphDB =
     open GraphModel
 
     let createClient () = 
-        let client = new GraphClient(new Uri("http://10.59.192.204:7474/"))
+        let client = new GraphClient(new Uri("http://mvillavi-3.desktop.amazon.com:7474"))
         client.Connect()
         client :> IGraphClient
 
