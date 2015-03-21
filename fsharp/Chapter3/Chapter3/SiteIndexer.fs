@@ -17,7 +17,7 @@ module SiteIndexer =
     open Microsoft.FSharp.Control.WebExtensions
     open System.Collections.Concurrent
     type WordMatches = { Link: string; Positions: List<int> }
-    type dbSchema = SqlDataConnection<"Data Source=MANCHAX-LAP;Initial Catalog=NewsIndex;Integrated Security=True; Pooling=False">
+    type dbSchema = SqlDataConnection<"Data Source=localhost;Initial Catalog=NewsIndex;Integrated Security=True; Pooling=False">
     let private putLimitTo = None
     //let private db = dbSchema.GetDataContext()
     let mutable private linkCache = new ConcurrentDictionary<string, int>()
@@ -52,10 +52,16 @@ module SiteIndexer =
                 Some(id)
             | _ -> None
     
-    let private ignoredWords = ["cómo"; "como"; "está"; "tica"; "ante"; "sobre"; "entre"; "qué"; "sin"; "ya"; "han"; "hemos"; "ha"; "tu"; "hace"; "tras"; "más"; "lo"; "y"; "si"; "no"; "de"; "del"; "para"; "pero"; "como"; "por"; "que"; "al"; "es"; "son"; "fue"; "ha"; "quien"; "en"; "la"; "el"; "los"; "las"; "un"; "uno"; "una"; "unos"; "su"; "sus"; "se"; "ser"; "si"; "este"; "esta"; "eso"; "esa"; "con"; 
-    "from"; "to"; "and"; "of"; "the"; "a"; "in"; "at"; "as"; "on"; "an"; "not"; "for"; "or"; "has"; "have"; "had"; "i"; "you"; "he"; "she"; "it"; "we"; "they"; "with"; "by"; 
-    "will"; "be"; "so"; "mine"; "his"; "her"; "your"; "our"; "ours"; "their"; "theirs"; "who"; "which"; "whose"; "what"; "when"; "why"; "would"; "let"; "but"; "many"; "much"; "this"; "that"; "those"; "these"; "how"; "do"; "does"; "did"; "was"; "were"; "is"; "are";
-    "com"; "css"; "ago"; "http"; "form"; "more"; "since"; "www"; "me"; "him"; "her"; "us"; "them"] |> Set.ofList
+    let private ignoredWords = ["cómo"; "como"; "está"; "tica"; "ante"; "sobre"; "entre"; "qué"; "sin"; 
+    "ya"; "han"; "hemos"; "ha"; "tu"; "hace"; "tras"; "más"; "lo"; "y"; "si"; "no"; "de"; "del"; "para"; 
+    "pero"; "como"; "por"; "que"; "al"; "es"; "son"; "fue"; "ha"; "quien"; "en"; "la"; "el"; "los"; "las"; 
+    "un"; "uno"; "una"; "unos"; "su"; "sus"; "se"; "ser"; "si"; "este"; "esta"; "eso"; "esa"; "con"; 
+    "from"; "to"; "and"; "of"; "the"; "a"; "in"; "at"; "as"; "on"; "an"; "not"; "for"; "or"; "has"; 
+    "have"; "had"; "i"; "you"; "he"; "she"; "it"; "we"; "they"; "with"; "by"; "will"; 
+    "be"; "so"; "mine"; "his"; "her"; "your"; "our"; "ours"; "their"; "theirs"; "who"; 
+    "which"; "whose"; "what"; "when"; "why"; "would"; "let"; "but"; "many"; "much"; "this"; "that"; "those"; "these"; 
+    "how"; "do"; "does"; "did"; "was"; "were"; "is"; "are"; "com"; "css"; "days"; "hours"; "ago"; "http"; 
+    "form"; "more"; "since"; "www"; "me"; "him"; "her"; "us"; "them"; "horas" ] |> Set.ofList
 
     // Shorthand - let the compiler do the work (used for XName cast to string with operator !!)
     let inline private implicit arg =
@@ -104,13 +110,12 @@ module SiteIndexer =
                 capital_words.Append(word.Trim()) |> ignore
             if capital_words.Length > 0 then
                 wordIndex <- addPosition wordIndex (capital_words.ToString()) m.Index
-            Debug.WriteLine(Profiling.wordProcessed())
+                            
         //continue indexing all other words
         for m in Regex.Matches(text, @"\b([a-z0-9][\w']{2,})\b") do
             Profiling.beginSnapshot()
             if not(ignoredWords.Contains(m.Value.ToLower())) then
-                wordIndex <- addPosition wordIndex m.Value m.Index
-            Debug.WriteLine(Profiling.wordProcessed())
+                wordIndex <- addPosition wordIndex m.Value m.Index            
         wordIndex
 
     let private addLink (matches:List<WordMatches>) link (positions:List<int>) = 
@@ -257,7 +262,7 @@ module SiteIndexer =
                         | count when putLimitTo.IsSome && count > putLimitTo.Value -> 
                             items |> Seq.take putLimitTo.Value //limit to 10 max
                         | _ -> items
-                printfn "Reading channel %s. Items: %i" name (items.Count())
+                printfn "%s - Reading channel %s. Items: %i" site name (items.Count())
                 //execute in parallel workflow using a fork/join pattern
                 Async.Parallel [for i in items -> createWordIndex (site, name) i] |> 
                 Async.RunSynchronously |> Array.iter ( fun i -> 
@@ -306,7 +311,7 @@ module SiteIndexer =
         Async.RunSynchronously |> 
         mergeIndexes    
 
-    let saveIndex (index:Map<string, List<WordMatches>>) = 
+    let deleteData() = 
         use db = dbSchema.GetDataContext()
         db.DataContext.ExecuteCommand("DELETE FROM WordsLinksPositions") |> ignore  
         db.DataContext.ExecuteCommand("DELETE FROM WordsLinks") |> ignore    
