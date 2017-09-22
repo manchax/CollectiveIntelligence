@@ -1,0 +1,11 @@
+﻿@model  IEnumerable<Sparc.TagCloud.TagCloudTag>
+@{
+    ViewData["Title"] = "News Tag Cloud";
+}
+
+<div class="tag-cloud">
+    @foreach ( var tag in Model )
+    {
+        <span class="tag kind-@tag.Category">@tag.Text</span>
+    }
+</div>

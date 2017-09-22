@@ -9,10 +9,10 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Chapter3</RootNamespace>
     <AssemblyName>Chapter3</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <Name>Chapter3</Name>
     <TargetFrameworkProfile />
-    <TargetFSharpCoreVersion>4.3.0.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>4.4.1.0</TargetFSharpCoreVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -62,19 +62,18 @@
     <Compile Include="SiteIndexer.fs" />
     <Compile Include="SQLEntityConnection.fs" />
     <Compile Include="Program.fs" />
-    <Content Include="packages.config" />
     <None Include="CREATE script.sql" />
+    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <Reference Include="FSharp.Core, Version=4.4.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Data.TypeProviders">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\FSharp\3.0\Runtime\v4.0\Type Providers\FSharp.Data.TypeProviders.dll</HintPath>
+      <HintPath>..\packages\FSharp.Data.TypeProviders.5.0.0.2\lib\net40\FSharp.Data.TypeProviders.dll</HintPath>
     </Reference>
     <Reference Include="HtmlAgilityPack">
-      <HintPath>..\packages\HtmlAgilityPack.1.4.9\lib\Net45\HtmlAgilityPack.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\HtmlAgilityPack.1.5.5\lib\Net45\HtmlAgilityPack.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
@@ -87,6 +86,23 @@
     <Reference Include="System.Numerics" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\LemmaSharp\LemmaSharpPrebuilt\LemmaSharpPrebuilt.csproj">
+      <Name>LemmaSharpPrebuilt</Name>
+      <Project>{1e700d21-62d3-4525-93fe-c1fb0a1b0564}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\LemmaSharp\LemmaSharpPrebuilt\LemmaSharpPrebuiltFull.csproj">
+      <Name>LemmaSharpPrebuiltFull</Name>
+      <Project>{d926b493-78b6-4fab-a354-53869f664b5b}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\LemmaSharp\LemmaSharp\LemmaSharp.csproj">
+      <Name>LemmaSharp</Name>
+      <Project>{a39293c1-92d8-47b9-93a4-41f443b4f9e4}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -1,41 +1,51 @@
 namespace Chapter3
 module SiteIndexer =
     open System
-    open System.Data
     open System.Linq
     open System.Xml.Linq
     open System.Diagnostics
     open System.IO
     open System.Text
     open System.Text.RegularExpressions
-    open System.Threading.Tasks
     open System.Net
     open Microsoft.FSharp.Control.CommonExtensions
     open HtmlAgilityPack
-    open Microsoft.FSharp.Data.TypeProviders
+    open FSharp.Data.TypeProviders
     open Microsoft.FSharp.Linq
     open Microsoft.FSharp.Control.WebExtensions
     open System.Collections.Concurrent
+    open LemmaSharp
+    open System.Data.Linq
+
     type WordMatches = { Link: string; Positions: List<int> }
-    type dbSchema = SqlDataConnection<"Data Source=localhost;Initial Catalog=NewsIndex;Integrated Security=True; Pooling=False">
+    type dbSchema = SqlDataConnection<"Data Source=localhost; Initial Catalog=NewsIndex;Integrated Security=True">
     let private putLimitTo = None
     //let private db = dbSchema.GetDataContext()
-    let mutable private linkCache = new ConcurrentDictionary<string, int>()
-    let mutable private wordCache = new ConcurrentDictionary<string, int>()
-    
-    let private findLinkID link =        
+    let private linkCache = new ConcurrentDictionary<string, dbSchema.ServiceTypes.Links>()
+    let private wordCache = new ConcurrentDictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+    let private lemmatizer = new LemmatizerPrebuiltFull(LanguagePrebuilt.Spanish)
+
+    let private updateReadOn linkID date =
+        use db = dbSchema.GetDataContext()
+        db.DataContext.ExecuteCommand("UPDATE Links SET ReadOn = {0} WHERE ID = {1}", date, linkID)
+
+    let private findLinkID link newDate =        
         if linkCache.ContainsKey(link) then
-            Some(linkCache.[link])
+            updateReadOn linkCache.[link].ID newDate |> ignore
+            Some(linkCache.[link].ID)
         else
             sprintf "%s Looking into DB for %s" (DateTime.Now.ToShortTimeString()) link |> Debug.WriteLine
             use db = dbSchema.GetDataContext()
-            let existing = db.DataContext.ExecuteQuery<int>("SELECT ID FROM Links WHERE Link = {0}", link) |> Seq.toArray
-            match existing.Length with 
-            | c when c > 0 -> 
-                let id = existing.[0]
-                let id = linkCache.AddOrUpdate(link, id, (fun _ oldValue -> oldValue) )
-                Some(id)
-            | _ -> None
+            let existing = db.Links.Where(fun l -> l.Link = link)
+            //let existing = db.DataContext.ExecuteQuery<dbSchema.ServiceTypes.Links>("SELECT * FROM Links WHERE Link = {0}", link) |> Seq.toArray
+            match existing.Any() with 
+            | true ->
+                let found = existing.First()
+                if found.ReadOn <> newDate then
+                    updateReadOn found.ID newDate |> ignore
+                linkCache.AddOrUpdate(link, found, (fun _ oldValue -> oldValue) ) |> ignore
+                Some(found.ID)
+            | false -> None
 
     let private findWordID word = 
         use db = dbSchema.GetDataContext()
@@ -43,25 +53,26 @@ module SiteIndexer =
             Some(wordCache.[word])
         else
             let q = (query { for w in db.Words do
-                            where ( w.Word = word )
-                            select w.ID
-                            take 1 }).FirstOrDefault()
+                                where ( w.Word.ToLower() = word.ToLower() )
+                                select w.ID
+                                take 1 }).FirstOrDefault()
             match q with 
             | id when id > 0 ->                 
                 let id = wordCache.AddOrUpdate(word, id, (fun _ oldValue -> oldValue) ) 
                 Some(id)
             | _ -> None
     
-    let private ignoredWords = ["cómo"; "como"; "está"; "tica"; "ante"; "sobre"; "entre"; "qué"; "sin"; 
+    let private ignoredWords = [""; "cómo"; "como"; "está"; "ante"; "bajo"; "sobre"; "entre"; "qué"; "sin"; 
     "ya"; "han"; "hemos"; "ha"; "tu"; "hace"; "tras"; "más"; "lo"; "y"; "si"; "no"; "de"; "del"; "para"; 
-    "pero"; "como"; "por"; "que"; "al"; "es"; "son"; "fue"; "ha"; "quien"; "en"; "la"; "el"; "los"; "las"; 
-    "un"; "uno"; "una"; "unos"; "su"; "sus"; "se"; "ser"; "si"; "este"; "esta"; "eso"; "esa"; "con"; 
+    "pero"; "como"; "por"; "que"; "al"; "es"; "son"; "fue"; "ha"; "quien"; "en"; "la"; "el"; "le"; "los"; "las"; 
+    "un"; "uno"; "una"; "unos"; "su"; "sus"; "se"; "ser"; "si"; "éste"; "esta"; "eso"; "esa"; "con"; 
     "from"; "to"; "and"; "of"; "the"; "a"; "in"; "at"; "as"; "on"; "an"; "not"; "for"; "or"; "has"; 
     "have"; "had"; "i"; "you"; "he"; "she"; "it"; "we"; "they"; "with"; "by"; "will"; 
     "be"; "so"; "mine"; "his"; "her"; "your"; "our"; "ours"; "their"; "theirs"; "who"; 
     "which"; "whose"; "what"; "when"; "why"; "would"; "let"; "but"; "many"; "much"; "this"; "that"; "those"; "these"; 
-    "how"; "do"; "does"; "did"; "was"; "were"; "is"; "are"; "com"; "css"; "days"; "hours"; "ago"; "http"; 
-    "form"; "more"; "since"; "www"; "me"; "him"; "her"; "us"; "them"; "horas" ] |> Set.ofList
+    "how"; "do"; "does"; "did"; "was"; "were"; "is"; "are"; "com"; "css"; "days"; "hours"; "ago"; "http"; "through";
+    "form"; "more"; "since"; "www"; "me"; "him"; "her"; "us"; "them"; 
+    "horas"; "tener"; "ser"; "estar"; "haber"; "todo"; "hacer"; "así" ] |> List.sort |> Set.ofList
 
     // Shorthand - let the compiler do the work (used for XName cast to string with operator !!)
     let inline private implicit arg =
@@ -70,52 +81,43 @@ module SiteIndexer =
     let private (!!) : string -> XName = implicit
 
     let private clean (text:string) : string = 
-        let mutable out = WebUtility.HtmlDecode(text)    
-        out <- Regex.Replace(out, @"(\r\n){2,}", "\r\n")
-        out <- Regex.Replace(out, @"\n{2,}", "\n")
+        let mutable out = WebUtility.HtmlDecode(text)
+        out <- Regex.Replace(out, @"\r\n", " | ")
+        out <- Regex.Replace(out, @"\n", " | ")
         out <- Regex.Replace(out, @"\s{2,}", " ")
         out <- Regex.Replace(out, @"\t", " ")
         out <- Regex.Replace(out, @"^ +", "", RegexOptions.Multiline) //starting line spaces
         out <- Regex.Replace(out, @" +$", "", RegexOptions.Multiline) //ending line spaces
-        out <- Regex.Replace(out, @"<!--\s*.*\s*-->", "")                
+        out <- Regex.Replace(out, @"<!--\s*.*\s*-->", "")
         out <- Regex.Replace(out, @"([a-z])([A-Z])", "$1 $2") //contiguous words likeThis   
         out <- Regex.Replace(out, @"(-)(\w*)", "$2") //remove '-' from start of word
         out <- Regex.Replace(out, @"\b\d+\b", "")
         out
 
-    let private addPosition (allWords:Map<string, List<int>>) (word:string) (position:int) =
-        let wordL = word.ToLower().Trim()
-        let wordT = word.Trim()
+    let private addPosition (allWords:Map<string, List<int>>) word position =
         let mutable words = allWords
-        if not(ignoredWords.Contains(wordL)) then 
-            let positions = match words.ContainsKey(wordT) with
-                | true -> position :: words.[wordT]
+        let positions = match words.ContainsKey(word) with
+                | true -> position :: words.[word]
                 | false -> [position]
-            words <- words.Add(wordT, positions)                 
-        words
+        words.Add(word, positions)
 
     let private parseWords text : Map<string,List<int>> = 
         let mutable wordIndex = Map.empty    
         //parse capital words to keep personal names together
-        for m in Regex.Matches(text, @"([A-Z][\w']+\s?)+") do
-            Profiling.beginSnapshot()
-            let capital_words = new StringBuilder()
-            let words = m.Value.Split(' ')
-            let lastIndex = words.Length-1
-            for i in 0..lastIndex do 
-                let word = match i with 
-                    | _ when (i = 0 || i = lastIndex) && not(ignoredWords.Contains(words.[i].ToLower())) -> 
-                        words.[i] + " "
-                    | _ -> " " 
-                capital_words.Append(word.Trim()) |> ignore
-            if capital_words.Length > 0 then
-                wordIndex <- addPosition wordIndex (capital_words.ToString()) m.Index
-                            
+        for m in Regex.Matches(text, @"([A-Z][\wáéíóúüñ.]+\s?(del|de)?\s?)+") do
+            wordIndex <- match m.Value.Trim().Split(' ').Length with
+                | 1 when not(ignoredWords.Contains(m.Value.Trim().ToLower())) -> 
+                     addPosition wordIndex (m.Value.Trim()) m.Index
+                | len when len > 1 -> 
+                    addPosition wordIndex (m.Value.Trim()) m.Index
+                | _ -> wordIndex
+
         //continue indexing all other words
-        for m in Regex.Matches(text, @"\b([a-z0-9][\w']{2,})\b") do
-            Profiling.beginSnapshot()
-            if not(ignoredWords.Contains(m.Value.ToLower())) then
-                wordIndex <- addPosition wordIndex m.Value m.Index            
+        for m in Regex.Matches(text, @"(?:\s)([a-záéíóúüñ][\wáéíóúüñ]+)") do
+            let lemma = lemmatizer.Lemmatize(m.Value.Trim()).ToLower().Trim()
+            //System.Diagnostics.Debug.WriteLine("Lemmatizing {0} to {1}", m.Value.Trim(), lemma)
+            if not(ignoredWords.Contains(lemma)) then
+                wordIndex <- addPosition wordIndex lemma m.Index            
         wordIndex
 
     let private addLink (matches:List<WordMatches>) link (positions:List<int>) = 
@@ -154,34 +156,36 @@ module SiteIndexer =
             if not(Directory.Exists(dirName)) then
                 Directory.CreateDirectory(dirName) |> ignore
             let fileName = match Path.GetFileNameWithoutExtension(uri.LocalPath) + ".txt" with
-                | name when File.Exists(Path.Combine(dirName, name)) -> name + "_" + Guid.NewGuid().ToString() + ".txt"
+                | name when File.Exists(Path.Combine(dirName, name)) -> 
+                    name + "_" + Guid.NewGuid().ToString() + ".txt"
                 | name -> name
             let fileName = Path.Combine(dirName, fileName)
-            let buffer = UTF8Encoding.UTF8.GetBytes(bodyText)
             use file = File.Create(fileName)
-            do! file.AsyncWrite(buffer)
+            let buffer = UTF8Encoding.UTF8.GetBytes(bodyText)
+            do! file.AsyncWrite buffer
         } |> Async.Start
-        bodyText |> parseWords 
+        bodyText |> parseWords
 
-    let private saveLink url = 
-        use db = dbSchema.GetDataContext()
-        let id = findLinkID url
+    let private saveLink url date = 
+        let id = findLinkID url date
         match id with 
         | None -> 
-            new dbSchema.ServiceTypes.Links(Link = url) |> db.Links.InsertOnSubmit
+            let link = new dbSchema.ServiceTypes.Links(Link = url, ReadOn = date)
+            use db = dbSchema.GetDataContext()
+            db.Links.InsertOnSubmit(link)
             try 
                 db.DataContext.SubmitChanges()
-                let id = db.DataContext.ExecuteQuery<int>("SELECT MAX(ID) FROM Links").First()
-                linkCache.AddOrUpdate(url, id, (fun _ oldValue -> oldValue) )
+                linkCache.AddOrUpdate(url, link, (fun _ oldValue -> oldValue) ).ID
             with ex -> 
                 printfn "Error al guardar link. Message: %s" ex.Message; 0
         | Some(value) -> value
 
-    let private parseHtml (site, channel) (url:string) =    
+    let private parseHtml (site, channel) url date =
         let webClient = new WebClient() 
+        webClient.Encoding <- Encoding.UTF8
         webClient.Headers.["user-agent"] <- "Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko"
         let uri = new Uri(url)    
-        let linkID = saveLink url
+        let linkID = saveLink url date
         async {
             try 
                 let doc = new HtmlDocument()
@@ -189,7 +193,7 @@ module SiteIndexer =
                 let enc = match doc.DetectEncodingHtml(data) with
                     | null -> webClient.Encoding
                     | e when e <> doc.DeclaredEncoding -> doc.DeclaredEncoding
-                    | e -> e                
+                    | e -> e
                 webClient.Encoding.GetBytes(data) |> enc.GetString |> doc.LoadHtml
                 let words = match doc.DocumentNode.SelectSingleNode("//body") with  
                     | null -> Map.empty<string, List<int>>
@@ -200,13 +204,13 @@ module SiteIndexer =
                 return (Map.empty<string, List<int>>, linkID)
         }
 
-    let private createWordIndex (site, channel) (i:XElement) =   
+    let private createWordIndex (site, channel) (i:XElement) date =   
         let link = i.Element(!!"link").Value        
         async {            
-            let! (pageWords, linkID) = parseHtml (site, channel) link 
+            let! (pageWords, linkID) = parseHtml (site, channel) link date
             use db = dbSchema.GetDataContext()
             for kv in pageWords do 
-                let word = kv.Key                        
+                let word = kv.Key
                 let wordID = match (findWordID word) with
                     | Some(value) -> value 
                     | None ->                         
@@ -222,31 +226,32 @@ module SiteIndexer =
                 let parent = 
                     new dbSchema.ServiceTypes.WordsLinks(   LinkID = linkID, 
                                                             WordID = wordID, 
-                                                            Count = kv.Value.Length )                                 
-                for p in kv.Value do
-                    parent.WordsLinksPositions.Add(
-                        new dbSchema.ServiceTypes.WordsLinksPositions(
-                            Position = p                            
-                        )
-                    )
+                                                            Count = kv.Value.Length ) 
+                parent |> db.WordsLinks.InsertOnSubmit
+                try 
+                    db.DataContext.SubmitChanges()                    
+                with ex -> 
+                    printfn "Error al guardar alguna o varias Posiciones de Palabra %s en Sitio %s. Message: %s" kv.Key link ex.Message
 
-                parent |> db.WordsLinks.InsertOnSubmit                                                                                   
-                //arent.WordsLinksPositions |> db.WordsLinksPositions.InsertAllOnSubmit
+                for p in kv.Value do
+                    new dbSchema.ServiceTypes.WordsLinksPositions(
+                        WordLinkID = parent.ID,
+                        Position = p)
+                    |> db.WordsLinksPositions.InsertOnSubmit
 
                 try 
                     db.DataContext.SubmitChanges()                    
                 with ex -> 
-                    printfn "Error al guardar alguna o varias Posiciones de Palabra %s en Sitio %s. Message: %s" kv.Key link ex.Message; 0  
+                    printfn "Error al guardar alguna o varias Posiciones de Palabra %s en Sitio %s. Message: %s" kv.Key link ex.Message
 
             return (pageWords, link)
-
         }
 
-    let private readChannel site (e:XElement) =   
+    let private readChannel site (e:XElement) date =   
         let url = e.Attribute(!!"url").Value 
         let name = match e.Attribute(!!"name") with
-                    | null -> "default"
-                    | value -> value.Value          
+            | null -> "default"
+            | value -> value.Value
         async {  
             //use reference cell instead of mutable because its within async block
             //NOTE: Use operator ! to get ref's value
@@ -264,7 +269,7 @@ module SiteIndexer =
                         | _ -> items
                 printfn "%s - Reading channel %s. Items: %i" site name (items.Count())
                 //execute in parallel workflow using a fork/join pattern
-                Async.Parallel [for i in items -> createWordIndex (site, name) i] |> 
+                Async.Parallel [for i in items -> createWordIndex (site, name) i date] |> 
                 Async.RunSynchronously |> Array.iter ( fun i -> 
                     //merge results into wordIndex
                     wordIndex := mergeToIndex !wordIndex i
@@ -288,10 +293,9 @@ module SiteIndexer =
                 finalIndex <- finalIndex.Add(kv.Key, matches)
         finalIndex
         
-    let readSites fileName = 
-        Profiling.init()
-        if Directory.Exists("data") then
-            Directory.Delete("data", true)
+    let readSites fileName (date:DateTime) = 
+        if Directory.Exists("data_"+ date.Ticks.ToString()) then
+            Directory.Delete("data_"+ date.Ticks.ToString(), true)
         let doc = XDocument.Load(AppDomain.CurrentDomain.BaseDirectory + fileName)
         doc.Root.Elements(!!"site") |> Seq.map( fun e -> 
             let site = e.Attribute(!!"name").Value
@@ -302,7 +306,7 @@ module SiteIndexer =
                                 channels |> Seq.take putLimitTo.Value
                             | _ -> channels
             async {            
-                return Async.Parallel [for c in channels -> readChannel site c] |> 
+                return Async.Parallel [for c in channels -> readChannel site c date] |> 
                 Async.RunSynchronously |> 
                 mergeIndexes
             }
@@ -311,7 +315,7 @@ module SiteIndexer =
         Async.RunSynchronously |> 
         mergeIndexes    
 
-    let deleteData() = 
+    let deleteData = 
         use db = dbSchema.GetDataContext()
         db.DataContext.ExecuteCommand("DELETE FROM WordsLinksPositions") |> ignore  
         db.DataContext.ExecuteCommand("DELETE FROM WordsLinks") |> ignore    

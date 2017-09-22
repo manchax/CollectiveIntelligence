@@ -8,7 +8,7 @@ module Main =
     let totalCount (wordEntries:List<WordMatches>) =
         query { for w in wordEntries do 
                 select w.Positions.Length } |> Seq.sum 
-                  
+
     let private print (word, count) =
         printfn "%s : %d" word count
 
@@ -16,8 +16,8 @@ module Main =
     let main argv = 
         let timer = new Stopwatch()    
         timer.Start()
-        deleteData()
-        let wordIndex = readSites "\\Sites.xml"
+        //deleteData
+        let wordIndex = readSites "\\Sites.xml" DateTime.Now
         timer.Stop()
         printfn "Catalogued Words: %i in %.2f seconds" wordIndex.Count timer.Elapsed.TotalSeconds    
         query { for w in wordIndex do    

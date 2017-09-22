@@ -20,7 +20,7 @@ module Profiling =
                 [|                     
                     new CounterCreationData("WordProcessedAvgTime", "avg. time to index a word", PerformanceCounterType.AverageTimer32)
                     new CounterCreationData("WordProcessed", "total words indexed", PerformanceCounterType.AverageBase)
-                |])).GetCounters()       
+                |])).GetCounters()
 
     let private watch = new Stopwatch()
     let mutable private data = Array.empty
@@ -31,7 +31,7 @@ module Profiling =
         data |> Array.iter ( fun c -> 
             c.ReadOnly <- false 
             c.InstanceName <- "PID: " + System.AppDomain.CurrentDomain.FriendlyName
-        )        
+        )
 
     let beginSnapshot() = watch.Restart()
     let endSnapshot() = 
