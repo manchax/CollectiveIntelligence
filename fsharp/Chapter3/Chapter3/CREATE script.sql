@@ -1,25 +1,73 @@
-CREATE TABLE Links
+USE [NewsIndex]
+GO
+/****** Object:  Table [dbo].[Links]    Script Date: 22/09/2017 12:14:08 p. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Links](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Link] [varchar](max) NULL,
+	[ReadOn] [datetime] NOT NULL,
+PRIMARY KEY CLUSTERED 
 (
-	ID int IDENTITY PRIMARY KEY,
-	Link varchar(max)
-)
-
-CREATE TABLE Words
+	[ID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[Words]    Script Date: 22/09/2017 12:14:08 p. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Words](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Word] [varchar](max) NULL,
+PRIMARY KEY CLUSTERED 
 (
-	ID int IDENTITY PRIMARY KEY,
-	Word varchar(max)
-)
-
-CREATE TABLE WordsLinks
+	[ID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[WordsLinks]    Script Date: 22/09/2017 12:14:08 p. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[WordsLinks](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[LinkID] [int] NOT NULL,
+	[WordID] [int] NOT NULL,
+	[Count] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
 (
-	ID INT IDENTITY PRIMARY KEY,
-	LinkID INT NOT NULL FOREIGN KEY REFERENCES Links (ID),
-	WordID INT NOT NULL FOREIGN KEY REFERENCES Words (ID),
-	Count INT NOT NULL
-)
-
-CREATE TABLE WordsLinksPositions 
+	[ID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[WordsLinksPositions]    Script Date: 22/09/2017 12:14:08 p. m. ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[WordsLinksPositions](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[WordLinkID] [int] NOT NULL,
+	[Position] [int] NOT NULL,
+PRIMARY KEY CLUSTERED 
 (
-	ID INT IDENTITY PRIMARY KEY,
-	Position INT NOT NULL
-)
+	[ID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[WordsLinks]  WITH CHECK ADD FOREIGN KEY([LinkID])
+REFERENCES [dbo].[Links] ([ID])
+GO
+ALTER TABLE [dbo].[WordsLinks]  WITH CHECK ADD FOREIGN KEY([WordID])
+REFERENCES [dbo].[Words] ([ID])
+GO
+ALTER TABLE [dbo].[WordsLinksPositions]  WITH CHECK ADD  CONSTRAINT [FK_WordsLinksPositions_WordsLinks] FOREIGN KEY([WordLinkID])
+REFERENCES [dbo].[WordsLinks] ([ID])
+GO
+ALTER TABLE [dbo].[WordsLinksPositions] CHECK CONSTRAINT [FK_WordsLinksPositions_WordsLinks]
+GO

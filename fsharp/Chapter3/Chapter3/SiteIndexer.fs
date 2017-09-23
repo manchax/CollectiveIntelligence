@@ -57,7 +57,7 @@ module SiteIndexer =
                                 select w.ID
                                 take 1 }).FirstOrDefault()
             match q with 
-            | id when id > 0 ->                 
+            | id when id > 0 ->
                 let id = wordCache.AddOrUpdate(word, id, (fun _ oldValue -> oldValue) ) 
                 Some(id)
             | _ -> None
@@ -72,7 +72,7 @@ module SiteIndexer =
     "which"; "whose"; "what"; "when"; "why"; "would"; "let"; "but"; "many"; "much"; "this"; "that"; "those"; "these"; 
     "how"; "do"; "does"; "did"; "was"; "were"; "is"; "are"; "com"; "css"; "days"; "hours"; "ago"; "http"; "through";
     "form"; "more"; "since"; "www"; "me"; "him"; "her"; "us"; "them"; 
-    "horas"; "tener"; "ser"; "estar"; "haber"; "todo"; "hacer"; "así" ] |> List.sort |> Set.ofList
+    "horas"; "tener"; "ser"; "estar"; "haber"; "todo"; "hacer"; "así"; "para"; "hoy"; "aquí" ] |> List.sort |> Set.ofList
 
     // Shorthand - let the compiler do the work (used for XName cast to string with operator !!)
     let inline private implicit arg =
@@ -94,8 +94,7 @@ module SiteIndexer =
         out <- Regex.Replace(out, @"\b\d+\b", "")
         out
 
-    let private addPosition (allWords:Map<string, List<int>>) word position =
-        let mutable words = allWords
+    let private addPosition (words:Map<string, List<int>>) word position =
         let positions = match words.ContainsKey(word) with
                 | true -> position :: words.[word]
                 | false -> [position]
@@ -107,17 +106,17 @@ module SiteIndexer =
         for m in Regex.Matches(text, @"([A-Z][\wáéíóúüñ.]+\s?(del|de)?\s?)+") do
             wordIndex <- match m.Value.Trim().Split(' ').Length with
                 | 1 when not(ignoredWords.Contains(m.Value.Trim().ToLower())) -> 
-                     addPosition wordIndex (m.Value.Trim()) m.Index
+                    addPosition wordIndex (m.Value.Trim()) m.Index
                 | len when len > 1 -> 
                     addPosition wordIndex (m.Value.Trim()) m.Index
                 | _ -> wordIndex
-
         //continue indexing all other words
         for m in Regex.Matches(text, @"(?:\s)([a-záéíóúüñ][\wáéíóúüñ]+)") do
             let lemma = lemmatizer.Lemmatize(m.Value.Trim()).ToLower().Trim()
             //System.Diagnostics.Debug.WriteLine("Lemmatizing {0} to {1}", m.Value.Trim(), lemma)
             if not(ignoredWords.Contains(lemma)) then
-                wordIndex <- addPosition wordIndex lemma m.Index            
+                wordIndex <- addPosition wordIndex lemma m.Index
+                wordIndex <- addPosition wordIndex (m.Value.Trim().ToLower()) m.Index
         wordIndex
 
     let private addLink (matches:List<WordMatches>) link (positions:List<int>) = 
@@ -275,7 +274,7 @@ module SiteIndexer =
                     wordIndex := mergeToIndex !wordIndex i
                 )
 
-            return !wordIndex             
+            return !wordIndex
         }
 
     let private mergeIndexes (indexes:Map<string, List<WordMatches>>[]) = 
@@ -313,7 +312,7 @@ module SiteIndexer =
         ) |> 
         Async.Parallel |> 
         Async.RunSynchronously |> 
-        mergeIndexes    
+        mergeIndexes
 
     let deleteData = 
         use db = dbSchema.GetDataContext()
